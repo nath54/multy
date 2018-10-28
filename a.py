@@ -1,0 +1,273 @@
+#coding:utf-8
+import random,pygame,time
+from pygame.locals import *
+
+nbj=2
+tex,tey=1200,1000
+joueurs=[]
+bullets=[]
+mape=[]
+rmape=[]
+pause=False
+pygame.init()
+
+mtpp=[0      ,1         ]
+mnom=["0"    ,"1"       ]
+mtxx=[200    ,200       ]
+mtyy=[200    ,100       ]
+mimg=["0.png","0.png"   ]
+
+class Mp:
+    def __init__(self,x,y,tp):
+        self.tp=tp
+        self.nom=mnom[tp]
+        self.px=x
+        self.py=y
+        self.tx=mtxx[tp]
+        self.ty=mtyy[tp]
+        self.img=pygame.transform.scale(pygame.image.load("images/mape/"+mimg[tp]),[self.tx,self.ty])
+        self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
+
+class Bullet:
+    def __init__(self,x,y,d,vv,prs):
+        self.px=x
+        self.py=y
+        self.tx=d[0]
+        self.ty=d[1]
+        self.degats=d[2]
+        self.vit=[vv[0]*d[3],vv[1]*d[3]]
+        self.cl=d[4]
+        self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
+        self.prs=prs
+    def detect(self,j):
+        if self.rect.colliderect(j.rect) and j!=self.prs: return True
+        return False
+
+atpp=[0]
+anom=["0"]
+aimg=[["0.png","01.png"]]
+atpa=[0.5]
+ablt=[ [5,7,20,5,(100,100,25)] ]
+
+ptpp=[0,1]
+pnom=["0","1"]
+pvie=[100,200]
+parm=[0,0]
+pvit=[5,10]
+ptxx=[32,32]
+ptyy=[50,50]
+pimg=[["0.png","01.png"],["1.png","11.png"]]
+
+class Arm:
+    def __init__(self,prs,tp):
+        self.prs=prs
+        self.tp=tp
+        self.imgs=aimg[tp]
+        self.img=pygame.transform.scale(pygame.image.load("images/armes/"+self.imgs[0]),[self.prs.tx,self.prs.ty])
+        self.blt=ablt[tp]
+        self.tpa=atpa[tp]
+        self.dna=time.time()
+    def att(self):
+        if time.time()-self.dna > self.tpa:
+            self.dna=time.time()
+            if self.prs.sens=="Right": bullets.append(Bullet(self.prs.px+self.prs.tx/2,self.prs.py+self.prs.ty/2,self.blt,[1,0],self.prs))
+            else: bullets.append(Bullet(self.prs.px+self.prs.tx/2,self.prs.py+self.prs.ty/2,self.blt,[-1,0],self.prs))
+            
+
+def tm(p):
+    for m in mape:
+        if m.rect.colliderect(p.rect): return True
+    return False
+
+class Perso:
+    def __init__(self,x,y,tp):
+        self.tp=tp
+        self.nom=""
+        self.px=x
+        self.py=y
+        self.tx=ptxx[tp]
+        self.ty=ptyy[tp]
+        self.arme=Arm(self,parm[tp])
+        self.vie_tot=pvie[tp]
+        self.vie=pvie[tp]
+        self.vit=pvit[tp]
+        self.imgs=pimg[tp]
+        self.img=pygame.transform.scale(pygame.image.load("images/persos/"+self.imgs[0]),[self.tx,self.ty])
+        self.rect=pygame.Rect(self.px,self.py,self.tx,self.ty)
+        self.touches=[]
+        self.sens="Right"
+        self.mort=False
+        self.dns=time.time()
+        self.tps=0.8
+        #0=up,1=down,2=left,3=right,4=att
+    def bouger(self,aa):
+        if aa == "Up" and time.time()-self.dns > self.tps:
+            self.dns=time.time()
+            self.py-=self.vit*10
+            j.rect=pygame.Rect(j.px,j.py,j.tx,j.ty)
+            if tm(self): self.py+=self.vit+1
+        elif aa == "Down":
+            self.py+=self.vit
+            j.rect=pygame.Rect(j.px,j.py,j.tx,j.ty)
+            if tm(self): self.py-=self.vit+1
+        elif aa == "Left":
+            self.px-=self.vit
+            j.rect=pygame.Rect(j.px,j.py,j.tx,j.ty)
+            if tm(self): self.px+=self.vit+1
+            self.sens=aa
+            self.img=pygame.transform.flip(pygame.transform.scale(pygame.image.load("images/persos/"+self.imgs[1]),[self.tx,self.ty]),True,False)
+            self.arme.img=pygame.transform.flip(pygame.transform.scale(pygame.image.load("images/armes/"+self.arme.imgs[1]),[self.tx,self.ty]),True,False)
+        elif aa == "Right":
+            self.px+=self.vit
+            j.rect=pygame.Rect(j.px,j.py,j.tx,j.ty)
+            if tm(self): self.px-=self.vit+1
+            self.sens=aa
+            self.img=pygame.transform.scale(pygame.image.load("images/persos/"+self.imgs[1]),[self.tx,self.ty])
+            self.arme.img=pygame.transform.scale(pygame.image.load("images/armes/"+self.arme.imgs[1]),[self.tx,self.ty])
+        elif aa == "Att":
+            self.arme.att()
+
+def dtm(j):
+    for m in mape:
+        if j.rect.colliderect(pygame.Rect(m.px,m.py-1,m.tx,m.ty)): return True
+    return False
+
+def gravity(j):
+    dd=1
+    while not dtm(j) and dd>0:
+        j.py+=1
+        dd-=1
+    
+font=pygame.font.SysFont("Serif",30)
+
+
+def aff():
+    fenetre.fill((0,0,0))
+    if not pause:
+        for m in mape:
+            fenetre.blit(m.img,[m.px,m.py])
+        for j in joueurs:
+          if j.px >= 0 and j.px <= tex and j.py >= 0 and j.py <= tey:
+            try:
+                fenetre.blit(j.img,[j.px,j.py])
+                fenetre.blit(j.arme.img,[j.px,j.py])
+            except: pass
+            pygame.draw.rect(fenetre,(250,0,0),(j.px,j.py-10,int(j.vie/j.vie_tot*j.tx),5),0)
+            pygame.draw.rect(fenetre,(0,0,0),(j.px,j.py-10,j.tx,5),1)
+        for b in bullets:
+          if b.px >= 0 and b.px <= tex and b.py >= 0 and b.py <= tey:
+            b.rect=pygame.draw.rect(fenetre,b.cl,(b.px,b.py,b.tx,b.ty),0)
+    pygame.display.update()
+
+def bb():
+    for b in bullets:
+        b.rect=pygame.Rect(b.px,b.py,b.tx,b.ty)
+        b.px+=b.vit[0]
+        b.py+=b.vit[1]
+        for j in joueurs:
+            if not j.mort and b.detect(j):
+                j.vie-=b.degats
+                del(bullets[bullets.index(b)])
+    for j in joueurs:
+        if j.vie <= 0 or j.px > tex or j.px < 0 or j.py > tey or j.py < 0:
+            j.mort=True
+            j.vie=0
+            j.img=j.imgs[1]
+        else:
+            j.rect=pygame.Rect(j.px,j.py,j.tx,j.ty)
+            gravity(j)
+    gn=[]
+    for j in joueurs:
+        if not j.mort: gn.append(j)
+    if len(gn)==1:
+        fenetre.fill((0,0,0))
+        fenetre.blit(font.render(j.nom+" player "+str(j.nb)+" a gagné",20,(200,200,200)),[tex/4,tey/2])
+        fenetre.blit(pygame.image.load("images/perso/"+pimg[j.tp][0]),[tex/2,100])
+        pygame.display.update()
+        time.sleep(0.5)
+        aevk()
+        time.sleep(0.5)
+        exit()
+
+def aevk():
+    while True:
+        for event in pygame.event.get():
+            if event.type==KEYDOWN: return event.key
+
+tchs=["Up","Down","Left","Right","Att"]
+
+
+def cm():
+    joueurs,bullets,mape,rmape=[],[],[],[]
+    fenetre.fill((0,0,0))
+    fenetre.blit(font.render("Press u for 2 player",20,(200,200,200)),[tex/4,tey/4])
+    fenetre.blit(font.render("Press i for 3 player",20,(200,200,200)),[tex/4,tey/3])
+    fenetre.blit(font.render("Press o for 4 player",20,(200,200,200)),[tex/4,tey/2])
+    pygame.display.update()
+    tt=aevk()
+    if tt == K_u: nbj=2
+    elif tt == K_i: nbj=3
+    else: nbj=4
+    time.sleep(0.5)
+    mape.append( Mp(50,600,0) )
+    mape.append( Mp(250,600,0) )
+    mape.append( Mp(450,600,0) )
+    mape.append( Mp(650,600,1) )
+    mape.append( Mp(450,400,1) )
+    for x in range(nbj):
+        joueurs.append( Perso(mape[x].px+mape[x].tx/2,mape[x].py-mape[x].tx*2,random.choice(ptpp)) )
+        joueurs[x].nb=x
+        for w in range(5):
+            fenetre.fill((0,0,0))
+            fenetre.blit(font.render("Player"+str(x+1)+" pressez votre touche "+tchs[w],20,(200,200,200)),[tex/4,tey/2])
+            fenetre.blit(joueurs[x].img,[tex/2,100])
+            pygame.display.update()
+            tt=aevk()
+            joueurs[x].touches.append(tt)
+            time.sleep(0.5)
+    
+    return joueurs,bullets,mape,rmape
+
+#########################################################################################
+
+fenetre=pygame.display.set_mode([tex,tey])
+pygame.display.set_caption("Multy")
+pygame.key.set_repeat(1,1)
+
+joueurs,bullets,mape,rmape=cm()
+print("a")
+
+encour=True
+dnta=time.time()
+tpta=0.01
+tchs=[]
+while encour:
+    for event in pygame.event.get():
+        if event.type==QUIT:
+            encour=False
+        elif event.type==KEYDOWN:
+            if event.key==K_q: encour=False
+            else: tchs.append(event.key)
+        elif event.type==KEYUP:
+            for k in tchs:
+                if k==event.key: del(tchs[tchs.index(k)])
+        tchs=list(set(tchs))
+    if time.time()-dnta > tpta:
+      dnta=time.time()
+      for k in tchs:
+        for j in joueurs:
+            if not j.mort:
+                if   k==j.touches[0]: j.bouger("Up")
+                elif k==j.touches[1]: j.bouger("Down")
+                elif k==j.touches[2]: j.bouger("Left")
+                elif k==j.touches[3]: j.bouger("Right")
+                elif k==j.touches[4]: j.bouger("Att")
+    aff()
+    bb()
+                    
+
+
+
+
+
+
