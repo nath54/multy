@@ -53,7 +53,7 @@ ptpp=[0,1]
 pnom=["0","1"]
 pvie=[100,200]
 parm=[0,0]
-pvit=[5,10]
+pvit=[5,7]
 ptxx=[32,32]
 ptyy=[50,50]
 pimg=[["0.png","01.png"],["1.png","11.png"]]
@@ -81,6 +81,7 @@ def tm(p):
 
 class Perso:
     def __init__(self,x,y,tp):
+        self.tp=tp
         self.nom=""
         self.px=x
         self.py=y
@@ -181,7 +182,7 @@ def bb():
     if len(gn)==1:
         fenetre.fill((0,0,0))
         fenetre.blit(font.render(j.nom+" player "+str(j.nb)+" a gagné",20,(200,200,200)),[tex/4,tey/2])
-        fenetre.blit(pygame.image.load("images/perso/"+pimg[j.tp][0]),[tex/2,100])
+        fenetre.blit(pygame.image.load("images/persos/"+pimg[j.tp][0]),[tex/2,100])
         pygame.display.update()
         time.sleep(0.5)
         aevk()
@@ -263,10 +264,3 @@ while encour:
                 elif k==j.touches[4]: j.bouger("Att")
     aff()
     bb()
-                    
-
-
-
-
-
-
